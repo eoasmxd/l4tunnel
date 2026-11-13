@@ -1,0 +1,28 @@
+export PATH := $(GOPATH)/bin:$(PATH)
+LDFLAGS := -s -w
+
+all: build
+
+build: app
+
+app:
+	env CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags "$(LDFLAGS)" -o ./l4tc_linux_386 ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags "$(LDFLAGS)" -o ./l4ts_linux_386 ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o ./l4tc_linux_amd64 ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o ./l4ts_linux_amd64 ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -ldflags "$(LDFLAGS)" -o ./l4tc_linux_arm ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -ldflags "$(LDFLAGS)" -o ./l4ts_linux_arm ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o ./l4tc_linux_arm64 ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o ./l4ts_linux_arm64 ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -ldflags "$(LDFLAGS)" -o ./l4tc_linux_mips64 ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -ldflags "$(LDFLAGS)" -o ./l4ts_linux_mips64 ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=linux GOARCH=mips64le go build -ldflags "$(LDFLAGS)" -o ./l4tc_linux_mips64le ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=linux GOARCH=mips64le go build -ldflags "$(LDFLAGS)" -o ./l4ts_linux_mips64le ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=linux GOARCH=mips GOMIPS=softfloat go build -ldflags "$(LDFLAGS)" -o ./l4tc_linux_mips ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=linux GOARCH=mips GOMIPS=softfloat go build -ldflags "$(LDFLAGS)" -o ./l4ts_linux_mips ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=linux GOARCH=mipsle GOMIPS=softfloat go build -ldflags "$(LDFLAGS)" -o ./l4tc_linux_mipsle ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=linux GOARCH=mipsle GOMIPS=softfloat go build -ldflags "$(LDFLAGS)" -o ./l4ts_linux_mipsle ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags "$(LDFLAGS)" -o ./l4tc_windows_386.exe ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags "$(LDFLAGS)" -o ./l4ts_windows_386.exe ./cmd/l4ts
+	env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o ./l4tc_windows_amd64.exe ./cmd/l4tc
+	env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o ./l4ts_windows_amd64.exe ./cmd/l4ts

@@ -1,0 +1,22 @@
+# Build stage
+FROM --platform=$BUILDPLATFORM golang:alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+WORKDIR /app
+COPY . .
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} go build -ldflags "-s -w" -o /bin/l4ts ./cmd/l4ts
+
+# Final stage
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates tzdata
+COPY --from=builder /bin/l4ts /usr/local/bin/l4ts
+COPY conf/l4ts.ini /etc/l4tunnel/l4ts.ini
+
+VOLUME ["/etc/l4tunnel"]
+EXPOSE 3007
+
+ENTRYPOINT ["l4ts"]
+CMD ["-c", "/etc/l4tunnel/l4ts.ini"]
+

@@ -1,0 +1,38 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Build & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Verify Code Formatting & Vet
+        run: |
+          go vet ./...
+
+      - name: Validate Linux Build
+        run: |
+          go build -v -o /dev/null ./cmd/l4tc
+          go build -v -o /dev/null ./cmd/l4ts
+
+      - name: Validate Windows Build
+        run: |
+          env GOOS=windows go build -v -o /dev/null ./cmd/l4tc
+          env GOOS=windows go build -v -o /dev/null ./cmd/l4ts
+
