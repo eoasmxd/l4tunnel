@@ -41,7 +41,8 @@ func ConnectServerWithTLS(addr string, tlsConfig *tls.Config) (c net.Conn, err e
 	}
 
 	if tlsConfig == nil {
-		tlsConfig = NewClientTLSConfig()
+		host, _, _ := net.SplitHostPort(addr)
+		tlsConfig = NewClientTLSConfig(host)
 	}
 
 	tlsConn := tls.Client(rawConn, tlsConfig)

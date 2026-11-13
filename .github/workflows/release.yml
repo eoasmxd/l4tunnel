@@ -2,10 +2,22 @@ name: Release & Docker Publish
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_docker:
+        description: '发布 Docker 镜像 (GHCR & Docker Hub)'
+        type: boolean
+        required: true
+        default: true
+      publish_release:
+        description: '发布 GitHub Release 二进制附件包'
+        type: boolean
+        required: true
+        default: false
 
 jobs:
   release-binaries:
     name: Build & Release Binaries
+    if: ${{ github.event.inputs.publish_release == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -42,6 +54,7 @@ jobs:
 
   publish-docker:
     name: Build & Push Docker Images
+    if: ${{ github.event.inputs.publish_docker == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
