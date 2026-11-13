@@ -1,15 +1,15 @@
-name: Release
+name: Publish
 
 on:
   workflow_dispatch:
     inputs:
       publish_docker:
-        description: '发布 Docker 镜像 (GHCR & Docker Hub)'
+        description: 'Publish Docker images (GHCR & Docker Hub)'
         type: boolean
         required: true
         default: true
       publish_release:
-        description: '发布 GitHub Release 二进制附件包'
+        description: 'Publish GitHub Release binary packages'
         type: boolean
         required: true
         default: false
@@ -45,9 +45,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_version.outputs.tag }}
-          name: Release v${{ env.VERSION }}
-          draft: false
+          name: v${{ env.VERSION }}
+          draft: true
           prerelease: false
+          generate_release_notes: true
           files: packages/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
