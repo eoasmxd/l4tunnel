@@ -1,4 +1,4 @@
-name: Release & Docker Publish
+name: Release
 
 on:
   workflow_dispatch:
@@ -82,11 +82,29 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to Docker Hub
-        if: ${{ secrets.DOCKERHUB_TOKEN != '' }}
+        if: env.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME || github.actor }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate Docker Tags
+        run: |
+          S_TAGS="ghcr.io/${{ github.repository_owner }}/l4ts:${{ env.VERSION }},ghcr.io/${{ github.repository_owner }}/l4ts:latest"
+          C_TAGS="ghcr.io/${{ github.repository_owner }}/l4tc:${{ env.VERSION }},ghcr.io/${{ github.repository_owner }}/l4tc:latest"
+
+          if [ -n "$DOCKERHUB_TOKEN" ]; then
+            DOCKER_USER="${{ secrets.DOCKERHUB_USERNAME || github.actor }}"
+            S_TAGS="$S_TAGS,docker.io/$DOCKER_USER/l4ts:${{ env.VERSION }},docker.io/$DOCKER_USER/l4ts:latest"
+            C_TAGS="$C_TAGS,docker.io/$DOCKER_USER/l4tc:${{ env.VERSION }},docker.io/$DOCKER_USER/l4tc:latest"
+          fi
+
+          echo "SERVER_TAGS=$S_TAGS" >> $GITHUB_ENV
+          echo "CLIENT_TAGS=$C_TAGS" >> $GITHUB_ENV
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push l4ts
         uses: docker/build-push-action@v5
@@ -95,11 +113,7 @@ jobs:
           file: docker/Dockerfile.server
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/386
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/l4ts:${{ env.VERSION }}
-            ghcr.io/${{ github.repository_owner }}/l4ts:latest
-            ${{ secrets.DOCKERHUB_TOKEN != '' && format('docker.io/{0}/l4ts:{1}', secrets.DOCKERHUB_USERNAME || github.actor, env.VERSION) || '' }}
-            ${{ secrets.DOCKERHUB_TOKEN != '' && format('docker.io/{0}/l4ts:latest', secrets.DOCKERHUB_USERNAME || github.actor) || '' }}
+          tags: ${{ env.SERVER_TAGS }}
 
       - name: Build and push l4tc
         uses: docker/build-push-action@v5
@@ -108,9 +122,5 @@ jobs:
           file: docker/Dockerfile.client
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/386
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/l4tc:${{ env.VERSION }}
-            ghcr.io/${{ github.repository_owner }}/l4tc:latest
-            ${{ secrets.DOCKERHUB_TOKEN != '' && format('docker.io/{0}/l4tc:{1}', secrets.DOCKERHUB_USERNAME || github.actor, env.VERSION) || '' }}
-            ${{ secrets.DOCKERHUB_TOKEN != '' && format('docker.io/{0}/l4tc:latest', secrets.DOCKERHUB_USERNAME || github.actor) || '' }}
+          tags: ${{ env.CLIENT_TAGS }}
 
