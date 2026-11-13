@@ -1,15 +1,15 @@
-name: Release
+name: Publish
 
 on:
   workflow_dispatch:
     inputs:
       publish_docker:
-        description: '发布 Docker 镜像 (GHCR & Docker Hub)'
+        description: 'Publish Docker images (GHCR & Docker Hub)'
         type: boolean
         required: true
         default: true
       publish_release:
-        description: '发布 GitHub Release 二进制附件包'
+        description: 'Publish GitHub Release binary packages'
         type: boolean
         required: true
         default: false
