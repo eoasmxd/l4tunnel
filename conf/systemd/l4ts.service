@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=nobody
 Restart=on-failure
 RestartSec=5s
-ExecStart=/usr/bin/l4ts -c /etc/l4t/l4ts.ini
+ExecStart=/usr/local/bin/l4ts -c /etc/l4tunnel/l4ts.ini
+LimitNOFILE=1048576
 
 [Install]
 WantedBy=multi-user.target
