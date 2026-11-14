@@ -2,7 +2,7 @@
 
 L4Tunnel 是一个纯 Go 标准库实现（零第三方依赖）的四层 TCP 内网穿透工具，支持标准 TLS 加密传输、Token 认证、预建工作连接池、断线重连接管以及客户端四层 TCP 健康检查。
 
-当前 Go 源码共 **16 个文件**，所有功能模块均为单层扁平化设计，分为 `cmd`、`client`、`server`、`config`、`msg`、`utils` 六个独立顶层模块。
+项目所有功能模块均采用单层扁平化设计，划分为 `cmd`、`client`、`server`、`config`、`msg`、`utils` 六个独立顶层模块。
 
 ---
 
@@ -60,7 +60,7 @@ flowchart TD
 | 文件 | 包 | 核心符号与职责 |
 | :--- | :--- | :--- |
 | [client/service.go](client/service.go) | `client` | `Service` 管理客户端生命周期：`login()` 建立 TLS 连接鉴权；`keepControllerWorking()` 监听控制通道断开并执行指数退避（1s → 20s）重连。 |
-| [client/control.go](client/control.go) | `client` | `Control` 管理单次控制会话：启动 `reader`、`writer`、`msgHandler` 与 `worker`；负责心跳收发、响应服务端请求补建工作连接。 |
+| [client/control.go](client/control.go) | `client` | `Control` 管理单次控制会话：通过 `worker` 协调调度 `reader`、`writer` 与 `msgHandler`；负责心跳收发、响应服务端请求补建工作连接。 |
 | [client/proxy.go](client/proxy.go) | `client` | 整合 `ProxyWrapper` 状态机与 `ProxyManager` 代理集合管理；负责健康检查联动与本地端口 `utils.Join` 数据桥接。 |
 | [client/health.go](client/health.go) | `client` | `HealthCheckMonitor` 周期对本地服务执行四层 TCP `DialContext` 探测；探测结果回调驱动代理上线/下线。 |
 
@@ -68,7 +68,7 @@ flowchart TD
 
 | 文件 | 包 | 核心符号与职责 |
 | :--- | :--- | :--- |
-| [server/service.go](server/service.go) | `server` | `Service` 启动 TLS 监听器（支持指定证书或内存自签）；`HandleListener` 读首帧分流 `Login`/`NewWorkConn`；`RegisterControl` 鉴权并接管旧会话。 |
+| [server/service.go](server/service.go) | `server` | `Service` 启动 TLS 监听器（支持指定证书或内存自签）；`HandleListener` 基于 HTTP Upgrade 握手首包分流 `login`/`work` 连接并鉴权；`RegisterControl` 接管旧会话。 |
 | [server/control.go](server/control.go) | `server` | `ControlManager` 管理在线客户端；`Control` 维护工作连接缓冲池 `workConnCh`、处理代理注册注销与心跳检测、优雅退出时排空连接并释放端口。 |
 | [server/proxy.go](server/proxy.go) | `server` | `TcpProxy` 监听公网端口；接收用户请求并从连接池取连接执行 `utils.Join` 透传；`ProxyManager` 避免代理名称冲突。 |
 
@@ -85,7 +85,7 @@ flowchart TD
 
 | 文件 | 包 | 核心符号与职责 |
 | :--- | :--- | :--- |
-| [msg/msg.go](msg/msg.go) | `msg` | 整合所有 10 种信令结构体定义与 `[1B 类型 + 4B 大端长度 + JSON 载荷]` 二进制帧编解码（`ReadMsg`、`ReadMsgInto`、`WriteMsg`），单次 5 字节固定帧头安全读取。 |
+| [msg/msg.go](msg/msg.go) | `msg` | 整合所有 7 种信令结构体定义与 `[1B 类型 + 4B 大端长度 + JSON 载荷]` 二进制帧编解码（`ReadMsg`、`ReadMsgInto`、`WriteMsg`），单次 5 字节固定帧头安全读取。 |
 
 ### 6. 底座工具（`utils/`）
 
@@ -173,7 +173,7 @@ sequenceDiagram
 
 ## 五、控制面帧协议格式
 
-所有经 TLS 隧道传输的信令消息均由 [msg/msg.go](msg/msg.go) 统一封包与解包：
+所有经 TLS 隧道升级后传输的控制信令均由 [msg/msg.go](msg/msg.go) 统一封包与解包（客户端登录握手与工作连接登记已前置于 HTTP Upgrade 报文 Header 中，不占用二进制帧）：
 
 ```text
 +------------+----------------------+--------------------------+
@@ -184,13 +184,10 @@ sequenceDiagram
 
 | Type 字节 | 常量名 | 方向 | 说明 |
 | :---: | :--- | :--- | :--- |
-| `'o'` | `TypeLogin` | Client → Server | 登录认证与连接池大小申报 |
-| `'1'` | `TypeLoginResp` | Server → Client | 返回分配/确认的 `RunId` 或错误信息 |
 | `'p'` | `TypeNewProxy` | Client → Server | 请求服务端监听指定 `RemotePort` |
 | `'2'` | `TypeNewProxyResp` | Server → Client | 返回代理注册结果 |
 | `'c'` | `TypeCloseProxy` | Client → Server | 请求停止代理并释放公网监听端口 |
 | `'r'` | `TypeReqWorkConn` | Server → Client | 请求客户端补充预建工作连接 |
-| `'w'` | `TypeNewWorkConn` | Client → Server | 新工作连接向对应 `RunId` 会话注册入池 |
 | `'s'` | `TypeStartWorkConn` | Server → Client | 通知工作连接关联的 `ProxyName`，随后进入纯流透传 |
 | `'h'` | `TypePing` | Client → Server | 客户端心跳探测 |
 | `'4'` | `TypePong` | Server → Client | 服务端心跳响应 |
