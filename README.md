@@ -1,5 +1,7 @@
 # L4Tunnel (Pure Layer-4 TCP Reverse Proxy)
 
+English | [简体中文](README.zh.md)
+
 L4Tunnel is deeply customized and modernized from the classic `frp v0.29.1`, focusing strictly on the most essential and reliable **Layer-4 (TCP) reverse port tunneling**.
 
 Implemented purely using the Go standard library (zero third-party dependencies), L4Tunnel preserves and enhances core capabilities including raw TCP port forwarding, pre-warmed connection pooling, mandatory standard TLS encryption, HTTP handshake authentication with honeypot-style defense (404 on unauthenticated probing), automatic reconnection, and client-side health checks.

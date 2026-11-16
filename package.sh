@@ -43,7 +43,7 @@ for os in $os_all; do
             mv ./l4tc_${os}_${arch} ${l4t_path}/l4tc
             mv ./l4ts_${os}_${arch} ${l4t_path}/l4ts
         fi  
-        cp ./LICENSE ./NOTICE ${l4t_path}
+        cp ./LICENSE ./NOTICE ./README.md ./README.zh.md ${l4t_path}
         cp ./conf/*.ini ${l4t_path}/
         if [ "x${os}" = x"linux" ]; then
             mkdir -p ${l4t_path}/systemd
