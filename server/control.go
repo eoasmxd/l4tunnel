@@ -33,6 +33,7 @@ import (
 const (
 	serverHeartbeatTimeout = 90 * time.Second
 	serverUserConnTimeout  = 10 * time.Second
+	poolCheckInterval      = 10 * time.Second
 	maxClientPoolCount     = 64
 )
 
@@ -127,11 +128,15 @@ func (ctl *Control) Start() {
 	ctl.workerWg.Add(3)
 	go ctl.writer()
 	for i := 0; i < ctl.poolCount; i++ {
-		ctl.sendMsg(&msg.ReqWorkConn{})
+		ctl.requestWorkConn()
 	}
 	go ctl.manager()
 	go ctl.reader()
 	go ctl.stopper()
+}
+
+func (ctl *Control) requestWorkConn() {
+	ctl.sendMsg(&msg.ReqWorkConn{})
 }
 
 func (ctl *Control) triggerStop() {
@@ -168,7 +173,18 @@ func (ctl *Control) RegisterWorkConn(conn net.Conn) error {
 func (ctl *Control) GetWorkConn() (workConn net.Conn, err error) {
 	select {
 	case workConn = <-ctl.workConnCh:
-		ctl.sendMsg(&msg.ReqWorkConn{})
+		if len(ctl.workConnCh) < ctl.poolCount {
+			ctl.requestWorkConn()
+		}
+		return workConn, nil
+	case <-ctl.stopCh:
+		return nil, errCtlClosed
+	default:
+		ctl.requestWorkConn()
+	}
+
+	select {
+	case workConn = <-ctl.workConnCh:
 		return workConn, nil
 	case <-ctl.stopCh:
 		return nil, errCtlClosed
@@ -281,6 +297,8 @@ func (ctl *Control) manager() {
 
 	heartbeat := time.NewTicker(time.Second)
 	defer heartbeat.Stop()
+	poolCheck := time.NewTicker(poolCheckInterval)
+	defer poolCheck.Stop()
 
 	for {
 		select {
@@ -290,6 +308,14 @@ func (ctl *Control) manager() {
 			if time.Since(ctl.lastPing) > serverHeartbeatTimeout {
 				xl.Warn("heartbeat timeout")
 				return
+			}
+		case <-poolCheck.C:
+			curLen := len(ctl.workConnCh)
+			if curLen < ctl.poolCount {
+				need := ctl.poolCount - curLen
+				for i := 0; i < need; i++ {
+					ctl.requestWorkConn()
+				}
 			}
 		case rawMsg := <-ctl.readCh:
 			switch m := rawMsg.(type) {

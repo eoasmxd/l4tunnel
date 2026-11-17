@@ -28,10 +28,17 @@ import (
 	"time"
 )
 
-const defaultDialTimeout = 10 * time.Second
+const (
+	defaultDialTimeout = 10 * time.Second
+	defaultKeepAlive   = 30 * time.Second
+)
 
 func ConnectServer(addr string) (c net.Conn, err error) {
-	return net.DialTimeout("tcp", addr, defaultDialTimeout)
+	dialer := &net.Dialer{
+		Timeout:   defaultDialTimeout,
+		KeepAlive: defaultKeepAlive,
+	}
+	return dialer.Dial("tcp", addr)
 }
 
 func ConnectServerWithTLS(addr string, tlsConfig *tls.Config) (c net.Conn, err error) {
