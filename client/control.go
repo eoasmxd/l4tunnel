@@ -84,28 +84,54 @@ func (ctl *Control) Run() {
 
 func (ctl *Control) HandleReqWorkConn(inMsg *msg.ReqWorkConn) {
 	xl := ctl.xl
-	workConn, err := ctl.connectServer()
-	if err != nil {
-		return
-	}
+	var (
+		workConn net.Conn
+		err      error
+	)
+	for i := 0; i < 3; i++ {
+		if i > 0 {
+			select {
+			case <-ctl.stopCh:
+				return
+			case <-time.After(time.Second):
+			}
+		}
+		workConn, err = ctl.connectServer()
+		if err != nil {
+			continue
+		}
 
-	now := time.Now().Unix()
-	req, err := http.NewRequest("POST", "/l4t/connect", nil)
-	if err != nil {
-		workConn.Close()
-		return
-	}
-	req.Header.Set("X-L4T-Type", "work")
-	req.Header.Set("X-L4T-Auth", utils.GetAuthKey(ctl.clientCfg.Token, now))
-	req.Header.Set("X-L4T-Timestamp", strconv.FormatInt(now, 10))
-	req.Header.Set("X-L4T-Run-Id", ctl.runId)
+		now := time.Now().Unix()
+		req, reqErr := http.NewRequest("POST", "/l4t/connect", nil)
+		if reqErr != nil {
+			workConn.Close()
+			return
+		}
+		req.Header.Set("X-L4T-Type", "work")
+		req.Header.Set("X-L4T-Auth", utils.GetAuthKey(ctl.clientCfg.Token, now))
+		req.Header.Set("X-L4T-Timestamp", strconv.FormatInt(now, 10))
+		req.Header.Set("X-L4T-Run-Id", ctl.runId)
 
-	if err = req.Write(workConn); err != nil {
-		workConn.Close()
-		return
+		workConn.SetDeadline(time.Now().Add(10 * time.Second))
+		if err = req.Write(workConn); err != nil {
+			workConn.Close()
+			continue
+		}
+		resp, respErr := http.ReadResponse(bufio.NewReader(workConn), req)
+		if respErr != nil || resp.StatusCode != http.StatusOK {
+			if resp != nil && resp.Body != nil {
+				resp.Body.Close()
+			}
+			workConn.Close()
+			err = fmt.Errorf("work connection handshake failed")
+			continue
+		}
+		resp.Body.Close()
+		workConn.SetDeadline(time.Time{})
+		err = nil
+		break
 	}
-	if resp, err := http.ReadResponse(bufio.NewReader(workConn), req); err != nil || resp.StatusCode != http.StatusOK {
-		workConn.Close()
+	if err != nil {
 		return
 	}
 
