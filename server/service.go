@@ -94,23 +94,23 @@ func (svr *Service) HandleListener(l net.Listener) {
 
 			connType := req.Header.Get("X-L4T-Type")
 			runId := req.Header.Get("X-L4T-Run-Id")
-			if connType == "login" && runId == "" {
-				var err error
-				runId, err = utils.RandId()
-				if err != nil {
+
+			if connType == "login" {
+				if runId == "" {
+					var err error
+					runId, err = utils.RandId()
+					if err != nil {
+						conn.Close()
+						return
+					}
+				}
+				upgradeResp := fmt.Sprintf("HTTP/1.1 200 OK\r\nConnection: Upgrade\r\nX-L4T-Run-Id: %s\r\nX-L4T-Version: %s\r\n\r\n", runId, utils.Version())
+				if _, err := io.WriteString(conn, upgradeResp); err != nil {
 					conn.Close()
 					return
 				}
-			}
+				conn.SetReadDeadline(time.Time{})
 
-			upgradeResp := fmt.Sprintf("HTTP/1.1 200 OK\r\nConnection: Upgrade\r\nX-L4T-Run-Id: %s\r\nX-L4T-Version: %s\r\n\r\n", runId, utils.Version())
-			if _, err := io.WriteString(conn, upgradeResp); err != nil {
-				conn.Close()
-				return
-			}
-			conn.SetReadDeadline(time.Time{})
-
-			if connType == "login" {
 				poolCount, _ := strconv.Atoi(req.Header.Get("X-L4T-Pool-Count"))
 				version := req.Header.Get("X-L4T-Version")
 				if err := svr.RegisterControl(conn, runId, version, poolCount); err != nil {
@@ -151,8 +151,23 @@ func (svr *Service) RegisterWorkConn(workConn net.Conn, runId string) {
 	ctl, exist := svr.ctlManager.GetById(runId)
 	if !exist {
 		xl.Warn("No client control found for run id [%s]", runId)
+		utils.WriteHttp404(workConn)
 		workConn.Close()
 		return
 	}
+	if !ctl.CanAcceptWorkConn() {
+		ctl.xl.Debug("workConnCh is full or control is closed, reject work connection")
+		utils.WriteHttp404(workConn)
+		workConn.Close()
+		return
+	}
+
+	upgradeResp := fmt.Sprintf("HTTP/1.1 200 OK\r\nConnection: Upgrade\r\nX-L4T-Run-Id: %s\r\nX-L4T-Version: %s\r\n\r\n", runId, utils.Version())
+	if _, err := io.WriteString(workConn, upgradeResp); err != nil {
+		workConn.Close()
+		return
+	}
+	workConn.SetReadDeadline(time.Time{})
+
 	ctl.RegisterWorkConn(workConn)
 }

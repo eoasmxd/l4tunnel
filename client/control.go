@@ -118,15 +118,17 @@ func (ctl *Control) HandleReqWorkConn(inMsg *msg.ReqWorkConn) {
 			continue
 		}
 		resp, respErr := http.ReadResponse(bufio.NewReader(workConn), req)
-		if respErr != nil || resp.StatusCode != http.StatusOK {
-			if resp != nil && resp.Body != nil {
-				resp.Body.Close()
-			}
+		if respErr != nil {
 			workConn.Close()
-			err = fmt.Errorf("work connection handshake failed")
+			err = respErr
 			continue
 		}
 		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			workConn.Close()
+			xl.Debug("work connection handshake rejected, status: %d", resp.StatusCode)
+			return
+		}
 		workConn.SetDeadline(time.Time{})
 		err = nil
 		break
@@ -147,8 +149,17 @@ func (ctl *Control) HandleReqWorkConn(inMsg *msg.ReqWorkConn) {
 	var startMsg msg.StartWorkConn
 	if err = msg.ReadMsgInto(workConn, &startMsg); err != nil {
 		close(doneCh)
-		xl.Error("work connection closed before response StartWorkConn message: %v", err)
 		workConn.Close()
+		select {
+		case <-ctl.stopCh:
+			return
+		default:
+		}
+		if err == io.EOF {
+			xl.Debug("work connection closed before response StartWorkConn message: %v", err)
+		} else {
+			xl.Warn("work connection closed before response StartWorkConn message: %v", err)
+		}
 		return
 	}
 	close(doneCh)

@@ -15,7 +15,7 @@
 
 package utils
 
-var version string = "1.0.2"
+var version string = "1.0.3"
 
 // Version 返回当前服务版本号。
 func Version() string {
