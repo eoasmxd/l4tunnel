@@ -152,6 +152,15 @@ func (ctl *Control) sendMsg(m msg.Message) {
 	}
 }
 
+func (ctl *Control) CanAcceptWorkConn() bool {
+	select {
+	case <-ctl.stopCh:
+		return false
+	default:
+	}
+	return len(ctl.workConnCh) < cap(ctl.workConnCh)
+}
+
 func (ctl *Control) RegisterWorkConn(conn net.Conn) error {
 	select {
 	case <-ctl.stopCh:
