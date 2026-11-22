@@ -229,8 +229,8 @@ go build -o bin/l4ts cmd/l4ts/main.go
 # 本地编译
 make
 
-# 交叉编译全平台二进制
-make -f ./Makefile.cross-compiles
+# 全平台交叉编译与打包
+make release
 ```
 
 ---

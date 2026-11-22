@@ -1,18 +1,19 @@
-export PATH := $(GOPATH)/bin:$(PATH)
+BIN_DIR := bin
+LDFLAGS := -s -w
+
+.PHONY: all build fmt release clean
 
 all: fmt build
 
-build: l4ts l4tc
+build:
+	go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/l4ts ./cmd/l4ts
+	go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/l4tc ./cmd/l4tc
 
 fmt:
 	go fmt ./...
 
-l4ts:
-	go build -o bin/l4ts ./cmd/l4ts
-
-l4tc:
-	go build -o bin/l4tc ./cmd/l4tc
+release:
+	bash ./package.sh
 
 clean:
-	rm -f ./bin/l4tc
-	rm -f ./bin/l4ts
+	rm -rf $(BIN_DIR) packages

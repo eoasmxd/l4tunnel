@@ -1,64 +1,79 @@
-# compile for version
-make
-if [ $? -ne 0 ]; then
-    echo "make error"
+#!/usr/bin/env bash
+# 交叉编译并打包各平台发布压缩包到 packages/ 目录
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "${ROOT_DIR}"
+
+VERSION="$(sed -n 's/^var version string = "\([^"]*\)".*/\1/p' ./utils/version.go)"
+if [[ -z "${VERSION}" ]]; then
+    echo "Failed to parse version from ./utils/version.go" >&2
     exit 1
 fi
 
-l4t_version=`./bin/l4ts -v`
-echo "build version: $l4t_version"
+LDFLAGS="-s -w"
+OUT_DIR="${ROOT_DIR}/packages"
+WORK_DIR="$(mktemp -d)"
+trap 'rm -rf "${WORK_DIR}"' EXIT
 
-# cross_compiles
-make -f ./Makefile.cross-compiles
+TARGETS=(
+    "linux/386"
+    "linux/amd64"
+    "linux/arm"
+    "linux/arm64"
+    "linux/mips"
+    "linux/mipsle"
+    "linux/mips64"
+    "linux/mips64le"
+    "windows/386"
+    "windows/amd64"
+)
 
-rm -rf ./packages
-mkdir ./packages
+rm -rf "${OUT_DIR}"
+mkdir -p "${OUT_DIR}"
 
-os_all='linux windows'
-arch_all='386 amd64 arm arm64 mips64 mips64le mips mipsle'
+echo "Building release packages for v${VERSION}"
 
-for os in $os_all; do
-    for arch in $arch_all; do
-        l4t_dir_name="l4t_${l4t_version}_${os}_${arch}"
-        l4t_path="./packages/l4t_${l4t_version}_${os}_${arch}"
+build_target() {
+    local os="$1"
+    local arch="$2"
+    local pkg_name="l4t_${VERSION}_${os}_${arch}"
+    local stage_dir="${WORK_DIR}/${pkg_name}"
+    local ext=""
+    local -a build_env=("CGO_ENABLED=0" "GOOS=${os}" "GOARCH=${arch}")
 
-        if [ "x${os}" = x"windows" ]; then
-            if [ ! -f "./l4tc_${os}_${arch}.exe" ]; then
-                continue
-            fi
-            if [ ! -f "./l4ts_${os}_${arch}.exe" ]; then
-                continue
-            fi
-            mkdir ${l4t_path}
-            mv ./l4tc_${os}_${arch}.exe ${l4t_path}/l4tc.exe
-            mv ./l4ts_${os}_${arch}.exe ${l4t_path}/l4ts.exe
-        else
-            if [ ! -f "./l4tc_${os}_${arch}" ]; then
-                continue
-            fi
-            if [ ! -f "./l4ts_${os}_${arch}" ]; then
-                continue
-            fi
-            mkdir ${l4t_path}
-            mv ./l4tc_${os}_${arch} ${l4t_path}/l4tc
-            mv ./l4ts_${os}_${arch} ${l4t_path}/l4ts
-        fi  
-        cp ./LICENSE ./NOTICE ./README.md ./README.zh.md ${l4t_path}
-        cp ./conf/*.ini ${l4t_path}/
-        if [ "x${os}" = x"linux" ]; then
-            mkdir -p ${l4t_path}/systemd
-            cp ./conf/systemd/l4ts.service ${l4t_path}/systemd/
-            cp ./conf/systemd/l4tc.service ${l4t_path}/systemd/
-        fi
+    if [[ "${os}" == "windows" ]]; then
+        ext=".exe"
+    fi
 
-        # packages
-        cd ./packages
-        if [ "x${os}" = x"windows" ]; then
-            zip -rq ${l4t_dir_name}.zip ${l4t_dir_name}
-        else
-            tar -zcf ${l4t_dir_name}.tar.gz ${l4t_dir_name}
-        fi  
-        cd ..
-        rm -rf ${l4t_path}
-    done
+    if [[ "${arch}" == "mips" || "${arch}" == "mipsle" ]]; then
+        build_env+=("GOMIPS=softfloat")
+    fi
+
+    echo "-> ${os}/${arch}"
+    mkdir -p "${stage_dir}"
+
+    env "${build_env[@]}" go build -ldflags "${LDFLAGS}" -o "${stage_dir}/l4ts${ext}" ./cmd/l4ts
+    env "${build_env[@]}" go build -ldflags "${LDFLAGS}" -o "${stage_dir}/l4tc${ext}" ./cmd/l4tc
+
+    cp ./LICENSE ./NOTICE ./README.md ./README.zh.md ./conf/*.ini "${stage_dir}/"
+
+    if [[ "${os}" == "linux" ]]; then
+        mkdir -p "${stage_dir}/systemd"
+        cp ./conf/systemd/l4ts.service ./conf/systemd/l4tc.service "${stage_dir}/systemd/"
+    fi
+
+    if [[ "${os}" == "windows" ]]; then
+        (cd "${WORK_DIR}" && zip -rq "${OUT_DIR}/${pkg_name}.zip" "${pkg_name}")
+    else
+        tar -C "${WORK_DIR}" -zcf "${OUT_DIR}/${pkg_name}.tar.gz" "${pkg_name}"
+    fi
+
+    rm -rf "${stage_dir}"
+}
+
+for target in "${TARGETS[@]}"; do
+    build_target "${target%/*}" "${target#*/}"
 done
+
+echo "Packages written to ${OUT_DIR}"

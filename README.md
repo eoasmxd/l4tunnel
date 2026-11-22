@@ -220,8 +220,8 @@ go build -o bin/l4ts cmd/l4ts/main.go
 # Local build
 make
 
-# Cross-compilation for all platforms
-make -f ./Makefile.cross-compiles
+# Cross-compile and package for all platforms
+make release
 ```
 
 ---
