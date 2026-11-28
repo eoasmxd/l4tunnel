@@ -188,7 +188,7 @@ func (ctl *Control) ClosedDoneCh() <-chan struct{} {
 
 func (ctl *Control) connectServer() (conn net.Conn, err error) {
 	conn, err = utils.ConnectServerWithTLS(
-		fmt.Sprintf("%s:%d", ctl.clientCfg.ServerAddr, ctl.clientCfg.ServerPort), utils.NewClientTLSConfig(ctl.clientCfg.ServerAddr))
+		fmt.Sprintf("%s:%d", ctl.clientCfg.ServerAddr, ctl.clientCfg.ServerPort), utils.NewClientTLSConfig(ctl.clientCfg.ServerAddr, ctl.clientCfg.TLSVerify))
 	if err != nil {
 		ctl.xl.Warn("start new connection to server error: %v", err)
 		return

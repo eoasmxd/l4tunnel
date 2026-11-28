@@ -21,12 +21,14 @@ import (
 )
 
 // ClientCommonConf 客户端全局配置。
+// ClientCommonConf holds global client configuration.
 type ClientCommonConf struct {
 	ServerAddr string
 	ServerPort int
 	LogLevel   string
 	Token      string
 	PoolCount  int
+	TLSVerify  bool
 }
 
 func GetDefaultClientConf() ClientCommonConf {
@@ -75,6 +77,14 @@ func UnmarshalClientConfFromIni(content string) (cfg ClientCommonConf, err error
 		if v, err := strconv.Atoi(tmpStr); err == nil && v >= 0 {
 			cfg.PoolCount = v
 		}
+	}
+
+	if tmpStr, ok = conf.Get("common", "tls_verify"); ok {
+		v, err := strconv.ParseBool(tmpStr)
+		if err != nil {
+			return ClientCommonConf{}, fmt.Errorf("parse conf error: invalid tls_verify")
+		}
+		cfg.TLSVerify = v
 	}
 
 	return cfg, nil

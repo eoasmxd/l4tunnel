@@ -42,11 +42,13 @@ type ctxKey int
 const logCtxKey ctxKey = 0
 
 // InitLog 初始化日志输出级别，日志统一输出到标准输出。
+// InitLog initializes the log output level; all logs are written to stdout.
 func InitLog(logLevel string) {
 	SetLogLevel(logLevel)
 }
 
 // SetLogLevel 设置日志输出级别。
+// SetLogLevel sets the log output level.
 func SetLogLevel(logLevel string) {
 	var level int32
 	switch logLevel {
@@ -86,6 +88,7 @@ func Debug(format string, v ...interface{}) { output(levelDebug, "[D]", format, 
 func Trace(format string, v ...interface{}) { output(levelTrace, "[T]", format, v...) }
 
 // Logger 支持上下文前缀拼接的轻量线程安全日志器。
+// Logger is a lightweight, thread-safe logger supporting contextual prefix chaining.
 type Logger struct {
 	mu           sync.RWMutex
 	prefixes     []string

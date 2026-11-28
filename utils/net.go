@@ -49,7 +49,7 @@ func ConnectServerWithTLS(addr string, tlsConfig *tls.Config) (c net.Conn, err e
 
 	if tlsConfig == nil {
 		host, _, _ := net.SplitHostPort(addr)
-		tlsConfig = NewClientTLSConfig(host)
+		tlsConfig = NewClientTLSConfig(host, false)
 	}
 
 	tlsConn := tls.Client(rawConn, tlsConfig)
@@ -63,6 +63,7 @@ func ConnectServerWithTLS(addr string, tlsConfig *tls.Config) (c net.Conn, err e
 }
 
 // Join 在两个连接之间双向转发数据，任一端结束时同时关闭两端的连接。
+// Join bidirectionally forwards data between two connections and closes both when either side ends.
 func Join(c1, c2 io.ReadWriteCloser) {
 	var wg sync.WaitGroup
 	pipe := func(dst, src io.ReadWriteCloser) {
@@ -79,23 +80,28 @@ func Join(c1, c2 io.ReadWriteCloser) {
 }
 
 // WriteHttp404 向连接写入标准的 HTTP 404 响应。
+// WriteHttp404 writes a standard HTTP 404 response to the connection.
 func WriteHttp404(c io.Writer) {
 	const resp404 = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 13\r\nConnection: close\r\n\r\n404 Not Found"
 	_, _ = io.WriteString(c, resp404)
 }
 
-// NewClientTLSConfig 创建客户端 TLS 配置，若指定地址为域名则自动配置 SNI。
-func NewClientTLSConfig(serverAddr string) *tls.Config {
+// NewClientTLSConfig 创建客户端 TLS 配置，支持按需启用服务端证书校验。
+// NewClientTLSConfig creates a client TLS configuration with optional server certificate verification.
+func NewClientTLSConfig(serverAddr string, tlsVerify bool) *tls.Config {
 	cfg := &tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: !tlsVerify,
 	}
-	if net.ParseIP(serverAddr) == nil && serverAddr != "" {
-		cfg.ServerName = serverAddr
+	if serverAddr != "" {
+		if tlsVerify || net.ParseIP(serverAddr) == nil {
+			cfg.ServerName = serverAddr
+		}
 	}
 	return cfg
 }
 
 // NewServerTLSConfig 加载指定的 TLS 证书，未指定时在内存中自动生成自签证书。
+// NewServerTLSConfig loads the specified TLS certificate or auto-generates an in-memory self-signed certificate if unset.
 func NewServerTLSConfig(certFile, keyFile string) (*tls.Config, error) {
 	if certFile != "" && keyFile != "" {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
