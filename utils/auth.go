@@ -23,11 +23,13 @@ import (
 )
 
 // RandId 生成默认 8 字节长度的随机十六进制字符串作为标识。
+// RandId generates a random hex identifier with a default length of 8 bytes.
 func RandId() (id string, err error) {
 	return RandIdWithLen(8)
 }
 
 // RandIdWithLen 生成指定字节长度的随机十六进制字符串。
+// RandIdWithLen generates a random hex string of the specified byte length.
 func RandIdWithLen(idLen int) (id string, err error) {
 	b := make([]byte, idLen)
 	_, err = rand.Read(b)

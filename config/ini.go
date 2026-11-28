@@ -22,6 +22,7 @@ import (
 )
 
 // LoadConfFromFile 读取配置文件原始内容。
+// LoadConfFromFile reads the raw contents of a configuration file.
 func LoadConfFromFile(path string) (string, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -42,6 +43,7 @@ func (s iniSections) Get(section, key string) (string, bool) {
 }
 
 // ParseIni 使用标准库解析简单的 INI 配置文件。
+// ParseIni parses a simple INI configuration file using the standard library.
 func ParseIni(content string) (iniSections, error) {
 	sections := make(iniSections)
 	current := ""

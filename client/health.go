@@ -30,6 +30,7 @@ const (
 )
 
 // HealthCheckMonitor 负责周期性探测本地服务四层连通性，并在状态变更时触发回调。
+// HealthCheckMonitor periodically probes local L4 service connectivity and triggers callbacks on status changes.
 type HealthCheckMonitor struct {
 	addr string
 

@@ -23,6 +23,7 @@ import (
 )
 
 // TcpProxyConf 四层 TCP 端口映射配置。
+// TcpProxyConf holds Layer-4 TCP port mapping configuration.
 type TcpProxyConf struct {
 	ProxyName       string
 	LocalIp         string

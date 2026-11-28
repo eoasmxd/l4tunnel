@@ -103,6 +103,7 @@ func readRawMsg(c io.Reader) (byte, []byte, error) {
 }
 
 // ReadMsg 从连接读取一条协议消息并反序列化为对应结构体指针。
+// ReadMsg reads a protocol message from the connection and unmarshals it into the corresponding struct pointer.
 func ReadMsg(c io.Reader) (Message, error) {
 	typeByte, payload, err := readRawMsg(c)
 	if err != nil {
@@ -122,6 +123,7 @@ func ReadMsg(c io.Reader) (Message, error) {
 }
 
 // ReadMsgInto 从连接读取消息并填充到指定的结构体指针中。
+// ReadMsgInto reads a protocol message from the connection and populates the given struct pointer.
 func ReadMsgInto(c io.Reader, m Message) error {
 	typeByte, payload, err := readRawMsg(c)
 	if err != nil {
@@ -142,6 +144,7 @@ func ReadMsgInto(c io.Reader, m Message) error {
 }
 
 // WriteMsg 将消息按 [1B类型 + 4B大端长度 + JSON] 帧格式写入连接。
+// WriteMsg writes a message to the connection in [1B type + 4B big-endian length + JSON] frame format.
 func WriteMsg(c io.Writer, m interface{}) error {
 	v := reflect.ValueOf(m)
 	if v.Kind() == reflect.Ptr {

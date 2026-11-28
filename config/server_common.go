@@ -21,6 +21,7 @@ import (
 )
 
 // ServerCommonConf 服务端全局配置。
+// ServerCommonConf holds global server configuration.
 type ServerCommonConf struct {
 	BindAddr      string
 	BindPort      int

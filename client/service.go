@@ -119,7 +119,7 @@ func (svr *Service) keepControllerWorking() {
 func (svr *Service) login() (conn net.Conn, err error) {
 	xl := utils.LogFromContextSafe(svr.ctx)
 	conn, err = utils.ConnectServerWithTLS(
-		fmt.Sprintf("%s:%d", svr.cfg.ServerAddr, svr.cfg.ServerPort), utils.NewClientTLSConfig(svr.cfg.ServerAddr))
+		fmt.Sprintf("%s:%d", svr.cfg.ServerAddr, svr.cfg.ServerPort), utils.NewClientTLSConfig(svr.cfg.ServerAddr, svr.cfg.TLSVerify))
 	if err != nil {
 		return
 	}

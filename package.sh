@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # 交叉编译并打包各平台发布压缩包到 packages/ 目录
+# Cross-compile and package release archives for all platforms into the packages/ directory
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"

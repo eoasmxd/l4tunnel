@@ -29,6 +29,7 @@ import (
 type GetWorkConnFn func() (net.Conn, error)
 
 // TcpProxy 负责服务端单个 TCP 映射端口的监听与转发。
+// TcpProxy listens on and forwards traffic for a single server-side TCP mapped port.
 type TcpProxy struct {
 	name          string
 	listener      net.Listener
@@ -127,6 +128,7 @@ func (pxy *TcpProxy) handleUserTcpConnection(userConn net.Conn) {
 }
 
 // ProxyManager 维护服务端活跃代理名称映射，避免跨客户端重名冲突。
+// ProxyManager maintains active server-side proxy names to prevent cross-client naming conflicts.
 type ProxyManager struct {
 	pxys map[string]*TcpProxy
 	mu   sync.RWMutex

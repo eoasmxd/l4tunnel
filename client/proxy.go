@@ -45,6 +45,7 @@ var (
 )
 
 // ProxyWrapper 管理客户端单条代理的生命周期、健康探测与工作连接转发。
+// ProxyWrapper manages a single client proxy's lifecycle, health checks, and work connection forwarding.
 type ProxyWrapper struct {
 	Name   string
 	Status string
@@ -219,6 +220,7 @@ func HandleTcpWorkConnection(ctx context.Context, cfg *config.TcpProxyConf, work
 }
 
 // ProxyManager 管理客户端代理配置集合。
+// ProxyManager manages the collection of client proxy configurations.
 type ProxyManager struct {
 	sendCh  chan msg.Message
 	stopCh  <-chan struct{}
@@ -275,6 +277,7 @@ func (pm *ProxyManager) sendMsg(m msg.Message) {
 }
 
 // StartAll 初始化并启动全部代理。
+// StartAll initializes and starts all proxies.
 func (pm *ProxyManager) StartAll(pxyCfgs map[string]*config.TcpProxyConf) {
 	xl := utils.LogFromContextSafe(pm.ctx)
 	pm.mu.Lock()
