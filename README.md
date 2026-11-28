@@ -19,7 +19,7 @@ Implemented purely using the Go standard library (zero third-party dependencies)
 ## Key Features
 
 - **Pure Layer-4 TCP**: Only supports TCP port forwarding without multi-protocol configuration.
-- **Standard TLS & Auth**: Mandatory standard TLS transport (supports custom cert/key or auto-generated in-memory certificate, with optional client-side certificate verification via `tls_verify`) with optional token password authentication.
+- **Standard TLS & Auth**: Mandatory standard TLS transport (supports custom cert/key or auto-generated in-memory certificate) with optional token password authentication.
 - **Service Health Check**: Client-side Layer-4 TCP health checks with automatic recovery and deregistration.
 
 ---
